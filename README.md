@@ -6,10 +6,12 @@ License: GNU GPL 3.0.
 
 ### List of components:
 
-   * test_fir       - FIR       : calculate IR and frequency response, find coeffs.  
-   * test_cic       - CIC       : calculate FIR-filter compensator to correct freq response after CIC filter.  
-   * test_cfir      - CFIR      : calculate CFIR-filter by 2 methods: Time-Domain / Freq-Domain.  
-   * test_fast_conv - FAST CONV : calculate fast convolution by using FFT / IFFT  
+| **Script**         | Function | Description |
+| -- | -- | -- |
+| **test_fir**       | FIR        | calculate IR and frequency response for FIR-filter, find coeffs.            |
+| **test_cic**       | CIC        | calculate FIR-filter compensator to correct freq response after CIC filter. |
+| **test_cfir**      | CFIR       | compare CFIR-filter by 2 methods: Time-Domain / Freq-Domain.                |
+| **test_fast_conv** | FAST CONV  | calculate fast convolution by using FFT / IFFT                              |
 
 ### Info:
 
