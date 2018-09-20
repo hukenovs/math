@@ -1,22 +1,48 @@
 %% -----------------------------------------------------------------------
 %
-% Title       : fir_test.m
+% Title       : test_cic.m
 % Author      : Alexander Kapitanov	
-% Company     : Insys
+% Company     : AO "Insys"
 % E-mail      : sallador@bk.ru 
 % Version     : 1.0	 
 %
-%-------------------------------------------------------------------------
+% ------------------------------------------------------------------------
 %
 % Description : 
-%    Create your FIR filters and use it in FPGA projects!
+% 
+%    FIR filters compensator to correct freq response after CIC filter.  
 %
-%-------------------------------------------------------------------------
+% ------------------------------------------------------------------------
 %
 % Version     : 1.0 
-% Date        : 2017.01.01 
+% Date        : 2017.06.03 
 %
-%% -----------------------------------------------------------------------   
+%% ----------------------------------------------------------------------- 
+%
+%	GNU GENERAL PUBLIC LICENSE
+% Version 3, 29 June 2007
+%
+%	Copyright (c) 2018 Kapitanov Alexander
+%
+% This program is free software: you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation, either version 3 of the License, or
+% (at your option) any later version.
+%
+% You should have received a copy of the GNU General Public License
+% along with this program.  If not, see <http://www.gnu.org/licenses/>.
+%
+% THERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY
+% APPLICABLE LAW. EXCEPT WHEN OTHERWISE STATED IN WRITING THE COPYRIGHT 
+% HOLDERS AND/OR OTHER PARTIES PROVIDE THE PROGRAM "AS IS" WITHOUT WARRANTY 
+% OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, 
+% THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR 
+% PURPOSE.  THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE PROGRAM 
+% IS WITH YOU.  SHOULD THE PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF 
+%  ALL NECESSARY SERVICING, REPAIR OR CORRECTION. 
+%
+%% -----------------------------------------------------------------------
+  
 set(0, 'DefaultAxesFontSize', 14, 'DefaultAxesFontName', 'Times New Roman');
 set(0, 'DefaultTextFontSize', 14, 'DefaultTextFontName', 'Times New Roman'); 
 
