@@ -102,6 +102,10 @@ Ffm = 1;
 % For testing FORWARD and INVERSE FFT: FWT
 STAGE = log2(NFFT);
 
+N = 128; % Filter order
+COE_WIDTH = 16; % Real width for FIR coeffs (Implementation)
+
+L = 2;
 %% -------------------------------------------------------------------------- %%
 % ---------------- 0: CREATE INPUT DATA FOR CPP/RTL -------------------------- % 
 %% -------------------------------------------------------------------------- %%
@@ -153,9 +157,6 @@ figure(1) % Plot loaded data in Time Domain
 Fcut = 20; % First freq (passband)
 Fs = 100; % Sampling freq
 
-N = 128; % Filter order
-COE_WIDTH = 24; % Real width for FIR coeffs (Implementation)
-
 BETA = 3; % Beta (Kaiser)
 WIND = kaiser(N, BETA); % KAISER WINDOW IS USED!
 
@@ -174,17 +175,185 @@ Sp_err = 20 * log10(abs(fftshift(fft(Hc_r, 10000))));
 ff = -0.5:1/10000:0.5-1/10000;
 
 % Plot FIR in T/F Domains
-figure(2)
-  subplot(2,1,1);
-  plot(t, Hc, '*-', 'LineWidth', 1, 'Color',[1 0 0]);
+
+%% -------------------------------------------------------------------------- %%
+% ---------------- 3:  FILTER INPUT SIGNAL L = 3 ----------------------------- % 
+%% -------------------------------------------------------------------------- %%
+
+if (L == 2) 
+  % 1) Model: 
+  Yc_s = filter(Hc, 1, DatX);
+  % 2) L=2 (4FIR implemented) 
+  Xc = DatX;
+  
+  % Impulse repsonse:
+  Hc0 = Hc(1:2:end); % each 2i
+  Hc1 = Hc(2:2:end); % each 2i+1, where i=0:N/2-1
+
+  % Input data:
+  Xc0 = Xc(1:2:end);
+  Xc1 = Xc(2:2:end);
+
+  Ac0 = filter(Hc0, 1, Xc0);
+  Ac1 = filter(Hc1, 1, Xc1);
+  
+  AAc1(1,1) = 0;
+  AAc1(2:NFFT/2,1) = Ac1(1:end-1,1);
+
+  Bc0 = filter(Hc0, 1, Xc1);
+  Bc1 = filter(Hc1, 1, Xc0);
+
+  Yc0 = Ac0 + AAc1;
+  Yc1 = Bc0 + Bc1;
+
+  for i = 1:NFFT/2
+    for j = 1:2
+      if (j == 1)  
+        Yc(2*i-1,1) = Yc0(i,1);
+      else
+        Yc(2*i-0,1) = Yc1(i,1); 
+      end
+    end   
+  end
+
+  % L = 2 (improved)
+  Xc01 = filter((Hc0+Hc1), 1, (Xc0+Xc1));
+  Zc1 = Xc01 - Ac0 - Ac1;
+
+  for i = 1:NFFT/2
+    for j = 1:2
+      if (j == 1)  
+        Zc(2*i-1,1) = Yc0(i,1);
+      else
+        Zc(2*i-0,1) = Zc1(i,1); 
+      end
+    end   
+  end
+
+  % L = 2 (Proposed: symmetric)
+  Qc01 = filter((Hc0(1:length(Hc0)/2)+Hc1(1:length(Hc1)/2)), 1, (Xc0+Xc1));
+  Qc10 = filter((Hc0(1:length(Hc0)/2)-Hc1(1:length(Hc1)/2)), 1, (Xc0-Xc1));
+  Qc11 = Ac1 + AAc1;
+  
+  Qc0 = Qc01 + Qc10 - Qc11;
+  Qc1 = Qc01 - Qc10;
+
+  for i = 1:NFFT/2
+    for j = 1:2
+      if (j == 1)  
+        Qc(2*i-1,1) = Qc0(i,1);
+      else
+        Qc(2*i-0,1) = Qc1(i,1); 
+      end
+    end   
+  end  
+
+  Yc_diff = Yc-Yc_s;
+  Zc_diff = Zc-Yc_s;
+  Qc_diff = Qc-Yc_s;
+  
+end
+
+%% -------------------------------------------------------------------------- %%
+% ---------------- 3:  FILTER INPUT SIGNAL L = 3 ----------------------------- % 
+%% -------------------------------------------------------------------------- %%
+if (L == 3)
+  % 1) Model: 
+  Yc_s = filter(Hc, 1, DatX(1:length(DatX)-rem(length(DatX), 3)));
+  % 2) L=2 (4FIR implemented) 
+  Xc = DatX(1:length(DatX)-rem(length(DatX), 3));
+  % Impulse repsonse:
+  Hc0 = Hc(1:3:end); % each 3i
+  Hc1 = Hc(2:3:end); % each 3i+1,
+  Hc2 = Hc(3:3:end); % each 3i+2,
+
+  % Input data:
+  Xc0 = Xc(1:3:end);
+  Xc1 = Xc(2:3:end);
+  Xc2 = Xc(3:3:end);
+
+  Ac0 = filter(Hc0, 1, Xc0);
+  Ac1 = filter(Hc0, 1, Xc1);
+  Ac2 = filter(Hc0, 1, Xc2);
+
+  Bc0 = filter(Hc1, 1, Xc0);
+  Bc1 = filter(Hc1, 1, Xc1);
+  Bc2 = filter(Hc1, 1, Xc2);  
+  
+  Cc0 = filter(Hc2, 1, Xc0);
+  Cc1 = filter(Hc2, 1, Xc1);
+  Cc2 = filter(Hc2, 1, Xc2);
+  
+%  AAc1(1,1) = 0;
+%  AAc1(2:round(NFFT/3),1) = Ac1(1:round(NFFT/3)-1,1);
+
+  Yc0 = Ac0 + Bc2 + Cc1;
+  Yc1 = Ac1 + Bc0 + Cc2;
+  Yc2 = Ac2 + Bc1 + Cc0;
+
+  for i = 1:floor(NFFT/3)
+    for j = 1:3
+      if (j == 1)  
+        Yc(3*i-2,1) = Yc0(i,1);
+      elseif (j == 2)
+        Yc(3*i-1,1) = Yc1(i,1);
+      else
+        Yc(3*i-0,1) = Yc2(i,1);        
+      end
+    end   
+  end
+
+  % L = 3 (improved)
+  
+  Xc01  = filter((Hc0+Hc1), 1, (Xc0+Xc1));
+  Xc12  = filter((Hc1+Hc2), 1, (Xc1+Xc2));
+  Xc012 = filter((Hc0+Hc1+Hc2), 1, (Xc0+Xc1+Xc2));
+  
+  Tco = Ac0 - Cc2;
+  Tc1 = Xc12 - Bc1;
+  Tc2 = Xc01 - Bc1;
+  
+  Zc0 = Tco + Tc1;
+  Zc1 = Tc2 - Tco;
+  Zc2 = Xc012 - Tc2 - Tc1;
+
+  for i = 1:floor(NFFT/3)
+    for j = 1:3
+      if (j == 1)  
+        Zc(3*i-2,1) = Zc0(i,1);
+      elseif (j == 2)
+        Zc(3*i-1,1) = Zc1(i,1);
+      else
+        Zc(3*i-0,1) = Zc2(i,1);        
+      end
+    end   
+  end
+  
+  Yc_diff = Yc - Yc_s(1:length(Zc));
+  Zc_diff = Zc - Yc_s(1:length(Zc));  
+ 
+end
+
+
+figure(1) % Plot loaded data in Time Domain  
+  subplot(3,1,1);
+  plot(Yc_s, '-', 'LineWidth', 2, 'Color',[0 0  1])
+  grid on
+  hold on
+  axis tight      
+  title(['Test Data in Time Domain'])
+
+figure(1)
+  subplot(3,1,2);
+  plot(Hc, '*-', 'LineWidth', 1, 'Color',[1 0 0]);
   axis tight;
   title(['Filter IR, Order = ',num2str(N)]);
   xlabel ('Time');
   ylabel ('Magnitude');
   grid on;
 
-  subplot(2,1,2);
-  plot(ff, Hf-max(Hf), '-', 'LineWidth', 1, 'Color',[1 0 0]);
+  subplot(3,1,3);
+  plot(Hf-max(Hf), '-', 'LineWidth', 1, 'Color',[1 0 0]);
   hold on
   
   plot(ff, Sp_err-max(Sp_err), '-', 'LineWidth', 1, 'Color',[0 0 1]);
@@ -196,98 +365,42 @@ figure(2)
   legend ('Double dtype', ['CoeWidth: ',num2str(COE_WIDTH)], 'location', 'east'); 
 
 
-%% -------------------------------------------------------------------------- %%
-% ---------------- 3:  FILTER INPUT SIGNAL ----------------------------------- % 
-%% -------------------------------------------------------------------------- %%
-
-% 1) Model: 
-Yc_s = filter(Hc, 1, DatX);
-figure(1) % Plot loaded data in Time Domain  
-  subplot(2,1,2);
-  plot(tt(1:NFFT), Yc_s, '-', 'LineWidth', 2, 'Color',[0 0  1])
+figure(2) % Plot loaded data in Time Domain  
+  subplot(5,1,1);
+  plot(Yc_s, '-', 'LineWidth', 1, 'Color',[1 0 0])
   grid on
   hold on
   axis tight      
-  title(['Test Data in Time Domain'])   
-
-% 2) L=2 (4FIR implemented) 
-Xc = DatX;  
-
-% Impulse repsonse:
-Hc0 = Hc(1:2:end); % each 2i
-Hc1 = Hc(2:2:end); % each 2i+1, where i=0:N/2-1
-
-% Input data:
-Xc0 = Xc(1:2:end);
-Xc1 = Xc(2:2:end);
-
-Ac0 = filter(Hc0, 1, Xc0);
-Ac1 = filter(Hc1, 1, Xc1);
-
-AAc1(1,1) = 0;
-AAc1(2:NFFT/2,1) = Ac1(1:NFFT/2-1,1);
-
-Bc0 = filter(Hc0, 1, Xc1);
-Bc1 = filter(Hc1, 1, Xc0);
-
-Yc0 = Ac0 + AAc1;
-Yc1 = Bc0 + Bc1;
-
-for i = 1:NFFT/2
-  for j = 1:2
-    if (j == 1)  
-      Yc(2*i-1,1) = Yc0(i,1);
-    else
-      Yc(2*i-0,1) = Yc1(i,1); 
-    end
-  end   
-end
-
-% L = 2 (improved)
-Xc01 = filter((Hc0+Hc1), 1, (Xc0+Xc1));
-Zc1 = Xc01 - Ac0 - Ac1;
-
-for i = 1:NFFT/2
-  for j = 1:2
-    if (j == 1)  
-      Zc(2*i-1,1) = Yc0(i,1);
-    else
-      Zc(2*i-0,1) = Zc1(i,1); 
-    end
-  end   
-end
-
-
-Yc_diff = Yc-Yc_s;
-Zc_diff = Zc-Yc_s;
-figure(3) % Plot loaded data in Time Domain  
-  subplot(4,1,1);
-  plot(tt(1:NFFT), Yc_s, '-', 'LineWidth', 1, 'Color',[1 0 0])
-  grid on
-  hold on
-  axis tight      
-  title(['Yc (algorithm)'])   
+  title(['Yc (algorithm as is)'])   
   
-  subplot(4,1,2);
-  plot(tt(1:NFFT), Yc, '-', 'LineWidth', 1, 'Color',[0 0 1])
+  subplot(5,1,2);
+  plot(Yc, '-', 'LineWidth', 1, 'Color',[0 0 1])
   grid on
   hold on
   axis tight      
   title(['Yc (parallel)'])  
   
-  subplot(4,1,3);
-  plot(tt(1:NFFT/1), Yc_diff(1:NFFT/1), '-', 'LineWidth', 2, 'Color',[0 1 0])
+  subplot(5,1,3);
+  plot(Yc_diff, '-', 'LineWidth', 2, 'Color',[0 1 0])
   grid on
   hold on
   axis tight      
-  title([''])  
+  title(['Yc difference'])  
   
-  subplot(4,1,4);
-  plot(tt(1:NFFT/1), Zc_diff(1:NFFT/1), '-', 'LineWidth', 2, 'Color',[0 1 0])
+  subplot(5,1,4);
+  plot(Zc_diff, '-', 'LineWidth', 2, 'Color',[0 1 0])
   grid on
   hold on
   axis tight      
-  title([''])   
+  title(['Yc difference (II method)'])    
+  
+  subplot(5,1,5);
+  plot(Qc_diff, '-', 'LineWidth', 2, 'Color',[0 1 0])
+  grid on
+  hold on
+  axis tight      
+  title(['Yc difference (Proposed)'])    
+  
   
 %disp("Y res   : ="), disp(Yc_s(145:149,1));
 %disp("Yc1     : ="), disp(Yc1(71:75,1));
