@@ -12,7 +12,7 @@ License: GNU GPL 3.0.
 | **test_cic**          | CIC             | calculate FIR-filter compensator to correct freq response after CIC filter. |
 | **test_cfir**         | CFIR            | compare CFIR-filter by 2 methods: Time-Domain / Freq-Domain.                |
 | **test_fast_conv**    | FAST CONV       | calculate fast convolution by using FFT / IFFT                              |
-| **test_parallel_fir** | FFA FIR         | calculate parallel hi-freq FIR-filters (polyphase without decimation        |
+| **test_parallel_fir** | FFA FIR         | calculate parallel hi-freq FIR-filters (polyphase without decimation)       |
 | **test_ulfft**        | ULTRA LONG FFT  | calculate ultra-long FFT / IFFT by using 2-D methods                        |
 
 ### Info:
