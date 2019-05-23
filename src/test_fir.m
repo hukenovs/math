@@ -1,27 +1,26 @@
-%% -----------------------------------------------------------------------
+%% ------------------------------------------------------------------------
 %
 % Title       : test_fir.m
-% Author      : Alexander Kapitanov	
-% Company     : AO "Insys"
+% Author      : Alexander Kapitanov 
 % E-mail      : sallador@bk.ru 
-% Version     : 1.0	 
+% Version     : 1.0  
 %
 % -------------------------------------------------------------------------
 %
 % Description : 
 %    Create your FIR filters and use it in FPGA projects!
 %
-% ------------------------------------------------------------------------
+% -------------------------------------------------------------------------
 %
 % Version     : 1.0 
 % Date        : 2017.03.20 
 %
-%% ----------------------------------------------------------------------- 
+%% ------------------------------------------------------------------------ 
 %
-%	GNU GENERAL PUBLIC LICENSE
+%   GNU GENERAL PUBLIC LICENSE
 % Version 3, 29 June 2007
 %
-%	Copyright (c) 2018 Kapitanov Alexander
+%   Copyright (c) 2018 Kapitanov Alexander
 %
 % This program is free software: you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
@@ -40,61 +39,61 @@
 % IS WITH YOU.  SHOULD THE PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF 
 %  ALL NECESSARY SERVICING, REPAIR OR CORRECTION. 
 %
-%% -----------------------------------------------------------------------	
+%% ------------------------------------------------------------------------
   
-set(0, 'DefaultAxesFontSize', 14, 'DefaultAxesFontName', 'Times New Roman');
-set(0, 'DefaultTextFontSize', 14, 'DefaultTextFontName', 'Times New Roman'); 
+set(0, 'DefaultAxesFontSize', 11, 'DefaultAxesFontName', 'Times New Roman');
+set(0, 'DefaultTextFontSize', 11, 'DefaultTextFontName', 'Times New Roman'); 
 
 close all;
 clear all;
 clf;
 
-%% -----------------------------------------------------------------------
+%% ------------------------------------------------------------------------
 
 % if IS_XXX = 'y' - use section, else if IS_XXX = 'n' - don't use section
-IS_PLOT1 = 'Y'; % Main info: FIR: Impulse/Freq responce, Quant. errors
-IS_PLOT2 = 'Y'; % Signal data plot via FIR filter
+IS_PLOT1    = 'Y'; % Main info: FIR: Impulse/Freq responce, Quant. errors
+IS_PLOT2    = 'Y'; % Signal data plot via FIR filter
 
-IS_COE   = 'N'; % create *.COE Xilinx file
-IS_TAPS  = 'N'; % create *.TAPS file for Graychip
-IS_HDR   = 'N'; % create *.H file (header)
+IS_COE      = 'N'; % create *.COE Xilinx file
+IS_TAPS     = 'N'; % create *.TAPS file for Graychip
+IS_HDR      = 'N'; % create *.H file (header)
 
-IS_HLS   = 'N'; % use example for Vivado HLS
+IS_HLS      = 'N'; % use example for Vivado HLS
 
-f1 = 125000; % First freq (passband)
-Fs = 1000000; % Sampling freq
+f1          = 125000; % First freq (passband)
+Fs          = 1000000; % Sampling freq
 
 % f2 = 110000; % Second freq (stopband)
 
-N = 128; % Filter order
-COE_WIDTH = 18; % Real width for FIR coeffs (Implementation)
+N           = 256; % Filter order
+COE_WIDTH   = 24; % Real width for FIR coeffs (Implementation)
 
-BETA = 5; % Beta (Kaiser)
-WIND = kaiser(N, BETA); % KAISER WINDOW IS USED!
-%WIND = hamming(N, 'symmetric'); 
+BETA        = 5; % Beta (Kaiser)
+WIND        = kaiser(N, BETA); % KAISER WINDOW IS USED!
+%WIND       = hamming(N, 'symmetric'); 
 
-NFFT = 2^10; % Number of FFT points (may leave this)
+NFFT        = 2^12; % Number of FFT points (may leave this)
 
-%% -----------------------------------------------------------------------
+%% ------------------------------------------------------------------------
 % ---- Set freqs for signal
-F1 = 10; 
-F2 = 100; 
-F3 = 1400; 
-F4 = 0; 
+F1          = 10; 
+F2          = 100; 
+F3          = 1400; 
+F4          = 0; 
 
-Asig = (2^15)-1;
-Fsig = 4;
-Fm = NFFT/8;
-Fnz = 350;
-Anz = 1;
+Asig        = (2^15)-1;
+Fsig        = 4;
+Fm          = NFFT/8;
+Fnz         = 350;
+Anz         = 1;
 
-SNR = 30; % Set noise params
+SNR         = 30; % Set noise params
 
-%% ------------------N----------------------------------------------------
+%% ------------------------------------------------------------------------
 % Calculate filter
 %delta_f = f2-f1;
-f =  [f1]/(Fs/2);
-t = 1:N;
+f   =  [f1]/(Fs/2);
+t   = 1:N;
 
 % Filter type: 'low', 'high', 'stop', 'pass';
 Hc = fir1(N-1, f, 'low', WIND);
@@ -104,7 +103,8 @@ Hc_r = round(Hc_n);
 Hf = 20 * log10(abs(fftshift(fft(Hc_n, NFFT))));
 Sp_err = 20*log10(abs(fftshift(fft(Hc_r, NFFT))));
 
-Hph = arg(fftshift(fft(Hc_n, NFFT)));
+% Hph = arg(fftshift(fft(Hc_n, NFFT)));
+Hph = (fftshift(fft(Hc_n, NFFT)));
 ff = -0.5:1/NFFT:0.5-1/NFFT;
 
 %freqz(Hc_r);
@@ -142,7 +142,8 @@ if (IS_PLOT1 == 'Y')
     ylabel ('Magnitude (dB)');  
     legend ('Double dtype', ['CoeWidth: ',num2str(COE_WIDTH)], 'location', 'east'); 
 end
-%% -----------------------------------------------------------------------
+
+%% ------------------------------------------------------------------------
 % Find calc error
 q1 = abs(Hc_n - Hc_r);
 Hc_err = 20*log10(abs(fftshift(fft(q1, NFFT))));
@@ -165,7 +166,8 @@ if (IS_PLOT1 == 'Y')
     xlabel ('Freq ( x rad / samples)');
     ylabel ('Magnitude (dB)');  
     grid on;
-end 
+end
+
 %% -----------------------------------------------------------------------
 % Find spectrun error for implementation
 

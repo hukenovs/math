@@ -1,12 +1,11 @@
-%% -----------------------------------------------------------------------
+%% ------------------------------------------------------------------------
 %
 % Title       : test_fast_conv.m
 % Author      : Alexander Kapitanov	
-% Company     : AO "Insys"
 % E-mail      : sallador@bk.ru 
 % Version     : 1.0	 
 %
-% ------------------------------------------------------------------------
+% -------------------------------------------------------------------------
 %
 % Description :  
 %  
@@ -16,12 +15,12 @@
 %  The linear convolution of an N-point vector, x, and an L-point vector, y, 
 %  has length N + L - 1.
 %
-% ------------------------------------------------------------------------
+% -------------------------------------------------------------------------
 %
 % Version     : 1.0 
 % Date        : 2017.05.14 
 %
-%% ----------------------------------------------------------------------- 
+%% ------------------------------------------------------------------------
 %
 %	GNU GENERAL PUBLIC LICENSE
 % Version 3, 29 June 2007
@@ -45,55 +44,55 @@
 % IS WITH YOU.  SHOULD THE PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF 
 %  ALL NECESSARY SERVICING, REPAIR OR CORRECTION. 
 %
-%% -----------------------------------------------------------------------	   
+%% ------------------------------------------------------------------------   
 
 % Preparing to work
 close all;
 clear all;
 
-set(0, 'DefaultAxesFontSize', 14, 'DefaultAxesFontName', 'Times New Roman');
-set(0, 'DefaultTextFontSize', 14, 'DefaultTextFontName', 'Times New Roman'); 
+set(0, 'DefaultAxesFontSize', 11, 'DefaultAxesFontName', 'Times New Roman');
+set(0, 'DefaultTextFontSize', 11, 'DefaultTextFontName', 'Times New Roman'); 
 
-%% -------------------------------------------------------------------------- %%
-% ---------------- CHANGE INPUT SIGNAL AND FFT PARAMETERS -------------------- %
-%% -------------------------------------------------------------------------- %%
+%% ------------------------------------------------------------------------
+%  ---------------- CHANGE INPUT SIGNAL AND FFT PARAMETERS ----------------
+%  ------------------------------------------------------------------------
 
 % Number of FFT length: (Filter length = NFFT / 2)
-NFFT = 2^8;            % Number of FFT points
-MT = 8;                % M multiplier for total length of data vector
+NFFT    = 2^8;          % Number of FFT points
+MT      = 8;            % M multiplier for total length of data vector
 
 % Signal parameters:
-Asig = 2^15-1;         % Signal magnitude
-Fsig = 0.3722;         % Signal frequency
-B = 0.125;             % Base for chirp signal
+Asig    = 2^15-1;       % Signal magnitude
+Fsig    = 0.3722;       % Signal frequency
+B       = 0.125;        % Base for chirp signal
 
-SNR = -10;             % AWGN
+SNR     = -10;          % AWGN
 
 % Filter parameters (FIR) and beta for Kaiser windowing:
-Fcut = 190;           % First freq (passband)
-Fs = 1000;            % Sampling freq
-BETA = 7;             % Add window: Beta (Kaiser)
+Fcut    = 190;          % First freq (passband)
+Fs      = 1000;         % Sampling freq
+BETA    = 7;            % Add window: Beta (Kaiser)
 
-%% -------------------------------------------------------------------------- %%
-% ---------------- 0: CREATE INPUT DATA FOR CPP/RTL -------------------------- %
-%% -------------------------------------------------------------------------- %%
-NT = MT/2;             % N multiplier (don't change)
-NSIG = NFFT * MT;      % Total signal length
-SEED = 1;
+%% ------------------------------------------------------------------------
+%  ---------------- 0: CREATE INPUT DATA FOR CPP/RTL ----------------------
+%  ------------------------------------------------------------------------
+NT      = MT/2;           % N multiplier (don't change)
+NSIG    = NFFT * MT;      % Total signal length
+SEED    = 1;
 
-for i = 1:NSIG
+for i = 0:NSIG-1
   
   % Chirp:
-  Dre(i,1) = round(Asig * cos((Fsig*i + B*i*i/2) * 1*pi/NFFT) * sin(2*i * pi / NSIG));
-  Dim(i,1) = round(Asig * sin((Fsig*i + B*i*i/2) * 1*pi/NFFT) * sin(2*i * pi / NSIG));
+  Dre(i+1,1) = round(Asig * cos((Fsig*i + B*i*i/2) * 1*pi/NFFT) * sin(2*i * pi / NSIG));
+  Dim(i+1,1) = round(Asig * sin((Fsig*i + B*i*i/2) * 1*pi/NFFT) * sin(2*i * pi / NSIG));
 
   % Harmonic w/ modulation:
-  % Dre(i,1) = Asig * cos(Fsig * i* 2*pi/NFFT) * sin(2*i * pi / NSIG);
-  % Dim(i,1) = Asig * sin(Fsig * i* 2*pi/NFFT) * sin(2*i * pi / NSIG);
+  % Dre(i+1,1) = Asig * cos(Fsig * i* 2*pi/NFFT) * sin(2*i * pi / NSIG);
+  % Dim(i+1,1) = Asig * sin(Fsig * i* 2*pi/NFFT) * sin(2*i * pi / NSIG);
 
   % Harmonic
-  % Dre(i,1) = Asig * cos(Fsig * i* 2*pi/NFFT);
-  % Dim(i,1) = Asig * sin(Fsig * i* 2*pi/NFFT);
+  % Dre(i+1,1) = Asig * cos(Fsig * i* 2*pi/NFFT);
+  % Dim(i+1,1) = Asig * sin(Fsig * i* 2*pi/NFFT);
  
 end
 
@@ -103,9 +102,9 @@ DatIm = awgn(Dim, SNR, 0, SEED);
 DSVRe = round(DatRe);
 DSVIm = round(DatIm);
 
-%% -------------------------------------------------------------------------- %%
-% ---------------- 1:  INPUT DATA (TEST MATH SIGNAL) ------------------------- % 
-%% -------------------------------------------------------------------------- %%
+%% ------------------------------------------------------------------------
+%  ---------------- 1:  INPUT DATA (TEST MATH SIGNAL) ---------------------
+%  ------------------------------------------------------------------------
 fid = fopen ("di_re.dat", "w");
 for i = 1:NFFT*MT
     fprintf(fid, "%d \n", DSVRe(i));
@@ -133,24 +132,24 @@ end
 Dcm1(:,1) = Din1(:,1) + j*Din1(:,2);
 Dcm2(:,1) = Din2(:,1) + j*Din2(:,2);
 
-%% -------------------------------------------------------------------------- %%
-% ---------------- 2:  SUPPORT FUNCTION FOR FC-FILTER ------------------------ % 
-%% -------------------------------------------------------------------------- %%
+%% ------------------------------------------------------------------------
+%  ---------------- 2:  SUPPORT FUNCTION FOR FC-FILTER --------------------
+%  ------------------------------------------------------------------------
 
-N = NFFT/2;           % Number of taps for FIR filter = NFFT/2
+N           = NFFT/2; % Number of taps for FIR filter = NFFT/2
 
-WIND = kaiser(N, BETA);
-f =  [Fcut]/(Fs/2);
-Hc = fir1(N-1, f, 'low', WIND);
-%Hc2 = [Hc zeros(1,N)];
+WIND        = kaiser(N, BETA);
+f           = [Fcut]/(Fs/2);
+Hc          = fir1(N-1, f, 'low', WIND);
+%Hc2        = [Hc zeros(1,N)];
 
-DFc(:,1) = conv(Din(1:NT*NFFT,1), Hc);
-DFc(:,2) = conv(Din(1:NT*NFFT,2), Hc);
+DFc(:,1)    = conv(Din(1:NT*NFFT,1), Hc);
+DFc(:,2)    = conv(Din(1:NT*NFFT,2), Hc);
 
-SF = fft(Hc, NFFT);
-SxFFT(:,1) = real(SF);
-SxFFT(:,2) = imag(SF);
-SFCm = SF';
+SF          = fft(Hc, NFFT);
+SxFFT(:,1)  = real(SF);
+SxFFT(:,2)  = imag(SF);
+SFCm        = SF';
 
 SXFFT(:,1) = round (2^14 * SxFFT(:,1));
 SXFFT(:,2) = round (2^14 * SxFFT(:,2));
@@ -161,9 +160,9 @@ for i = 1:NFFT/2
 end
 fclose(fid);
 
-%% -------------------------------------------------------------------------- %%
-% ---------------- 3:  CREATE TWO PARTS OF SPECTRUM -------------------------- % 
-%% -------------------------------------------------------------------------- %%
+%% ------------------------------------------------------------------------
+%  ---------------- 3:  CREATE TWO PARTS OF SPECTRUM ----------------------
+%  ------------------------------------------------------------------------
 for j = 1:NT
   Dfft1(:,j) = fft(Dcm1((j-1)*NFFT+1 : NFFT*j, 1), NFFT);
   Dfft2(:,j) = fft(Dcm2((j-1)*NFFT+1 : NFFT*j, 1), NFFT);
@@ -177,9 +176,9 @@ DatFFT1(:,2) = imag(Dfft_l1);
 DatFFT2(:,1) = real(Dfft_l2);
 DatFFT2(:,2) = imag(Dfft_l2);
 
-%% -------------------------------------------------------------------------- %%
-% ---------------- 4:  CALCULATE FC FILTER (FFT-IFFT) ------------------------ % 
-%% -------------------------------------------------------------------------- %%
+%% ------------------------------------------------------------------------
+%  ---------------- 4:  CALCULATE FC FILTER (FFT-IFFT) --------------------
+%  ------------------------------------------------------------------------
 
 for j = 1:NT
   DCM1(:,j) = Dfft1(:,j) .* SFCm;
@@ -207,9 +206,9 @@ DatIFFT1(:,2) = imag(Difft_l1);
 DatIFFT2(:,1) = real(Difft_l2);
 DatIFFT2(:,2) = imag(Difft_l2);
 
-%% -------------------------------------------------------------------------- %%
+%% ------------------------------------------------------------------------
 % ---------------- 5:  CALCULATE Output parts of data ------------------------ % 
-%% -------------------------------------------------------------------------- %%
+%% ------------------------------------------------------------------------
 
 for i = 1:NFFT
   for j = 1:NT
@@ -235,9 +234,9 @@ for i = 1:NFFT
   end
 end
 
-%% -------------------------------------------------------------------------- %%
+%% ------------------------------------------------------------------------
 % ---------------- 6:  PLOT: INPUT, SF SPEC, FFT/IFFT, OUTPUT ---------------- % 
-%% -------------------------------------------------------------------------- %%
+%% ------------------------------------------------------------------------
 
 figure(1) % Plot loaded data in Time Domain
 for i = 1:2
