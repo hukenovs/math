@@ -1,26 +1,25 @@
 %% ------------------------------------------------------------------------
 %
 % Title       : test_ulfft.m
-% Author      : Alexander Kapitanov	
+% Author      : Alexander Kapitanov 
 % E-mail      : sallador@bk.ru 
-% Version     : 1.0	 
+% Version     : 1.0
 %
 % -------------------------------------------------------------------------
 %
 % Description : 
-%    Top level for testing Ultra Long FFT model
+%    Testing Ultra Long FFT model
 %
 % -------------------------------------------------------------------------
 %
-% Version     : 1.0
 % Date        : 2018.04.15 
 %
 %% ------------------------------------------------------------------------ 
 %
-%   GNU GENERAL PUBLIC LICENSE
+% GNU GENERAL PUBLIC LICENSE
 % Version 3, 29 June 2007
 %
-%	Copyright (c) 2018 Kapitanov Alexander
+% Copyright (c) 2018 Kapitanov Alexander
 %
 % This program is free software: you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
@@ -49,26 +48,26 @@ set(0, 'DefaultTextFontSize', 12, 'DefaultTextFontName', 'Times New Roman');
 
 
 %% ---- Settings ----------------------------------------------------------
-N1      = 16; % Colomn
-N2      = 16; % Rows
-NFFT    = N1 * N2;    % Total FFT length
+N1      = 16;           % Colomn
+N2      = 8;            % Rows
+NFFT    = N1 * N2;      % Total FFT length
 
-Asig = (2^14)-1;
-Fsig = 4;
-F0 = 0;
-Fm = NFFT/1;
-B = Fm / NFFT;
-Ffm = 1;
+Asig    = 1;
+Fsig    = 4;
+B       = 0.4;
 
 %% ---- Input data for FFT calculate --------------------------------------
+Dre = zeros(NFFT, 1);
+Dim = zeros(NFFT, 1);
+
 for i = 0:NFFT-1
   Dre(i+1,1) = Asig * cos(Fsig*i* 2*pi/NFFT);
   Dim(i+1,1) = Asig * sin(Fsig*i* 2*pi/NFFT);
+
+  Dre(i+1,1) = Asig * cos((Fsig*i + B*i*i/2) * 2*pi/NFFT) * sin(i * pi / NFFT);
+  Dim(i+1,1) = Asig * sin((Fsig*i + B*i*i/2) * 2*pi/NFFT) * sin(i * pi / NFFT);
   
-  Dre(i+1,1) = round(Asig * cos(F0 + (Fsig*i + B*i*i/2) * 2*pi/NFFT) * sin(i * Ffm * pi / NFFT));
-  Dim(i+1,1) = round(Asig * sin(F0 + (Fsig*i + B*i*i/2) * 2*pi/NFFT) * sin(i * Ffm * pi / NFFT));
-  
-  if (i == 17)
+  if (i == 4)
     Dre(i+1,1) = Asig;
     Dim(i+1,1) = 0;
   else
@@ -78,11 +77,10 @@ for i = 0:NFFT-1
 end
 
 % Adding noise to real signal
-SNR = 50;
-SEED = 1;
+SNR = 90;
 
-DatRe = awgn(Dre, SNR, 0, SEED);
-DatIm = awgn(Dim, SNR, 0, SEED);
+DatRe = awgn(Dre, SNR, 0, 1);
+DatIm = awgn(Dim, SNR, 0, 1);
 
 DAT_IN = DatRe + 1j*DatIm;
 
@@ -105,93 +103,103 @@ IX(:,2) = imag(DFFT0);
 %  ------------------------------------------------------------------------
 
 % ---- STAGE 0: CREATE MATRIX FOR INPUT DATA ----
+DIN = zeros(N1,N2);
 for n1 = 1:N1
   for n2 = 1:N2
-    DIN(n2, n1) = DAT_IN((n2-1)*N1+n1,1);
+    DIN(n1, n2) = DAT_IN((n2-1)*N1+n1,1);
   end 
 end
 
-for k1 = 1:N1
-  for k2 = 1:N2
-    DIN_L(1, (k2-1)*N1+k1) = DIN(k1, k2);
+DIN_L = zeros(NFFT,1);
+for n1 = 1:N1
+  for n2 = 1:N2
+    DIN_L((n1-1)*N2+n2, 1) = DIN(n1, n2);
   end 
 end
+
 IR1(:,1) = real(DIN_L);
 IR1(:,2) = imag(DIN_L);
 
-
 % ---- STAGE 1: CALCULATE FIRST FFT (A) ----
+DFFT1 = zeros(N1,N2);
 for n1 = 1:N1
-  DFFT1(:,n1) = fft(DIN(:,n1));
+  DFFT1(n1,:) = fft(DIN(n1,:));
 end
 
-for k1 = 1:N1
-  for k2 = 1:N2
-    DFFT1_L(1, (k2-1)*N1+k1) = DFFT1(k1, k2);
+DFFT1_L = zeros(NFFT,1);
+for n1 = 1:N1
+  for n2 = 1:N2
+    DFFT1_L((n1-1)*N2+n2, 1) = DFFT1(n1, n2);
   end 
 end
 
 IR2(:,1) = real(DFFT1_L);
 IR2(:,2) = imag(DFFT1_L);
 
-
-% ---- STAGE 2: ROTATE AFTER SHUFFLER ----
-% fid = fopen ("WW_ULFFT.dat", "w");
+% ---- STAGE 2: SHUFFLE FFT RESULT ----
+SHF1_L = zeros(NFFT,1);
 for n1 = 1:N1
-  for k2 = 1:N2
-    SHW(k2, n1) = exp(-1j*2*pi*(n1-1)*(k2-1)/(N1*N2)); 
-    SRW(k2, n1) = round((Asig * SHW(k2, n1)));
-    % fprintf(fid, "%d+i*%d\t", real(SRW(k2, n1)), imag(SRW(k2, n1)));
-
-    DVH(k2, n1) = DFFT1(k2, n1);
-  end
-  % fprintf(fid, "\n");
-end
-% fclose(fid);
-
-for n1 = 1:N1
-  for k2 = 1:N2
-    DSH(k2, n1) = DFFT1(k2, n1) * SHW(k2, n1);
-  end
-end
-
-for k1 = 1:N1
-  for k2 = 1:N2
-    DCORD(1, (k2-1)*N1+k1) = SHW(k1, k2);
+  for n2 = 1:N2
+    SHF1_L((n2-1)*N1+n1,1) = DFFT1(n1, n2);
   end 
 end
 
-IR4(:,1) = real(DCORD);
-IR4(:,2) = imag(DCORD);
+IR3(:,1) = real(SHF1_L);
+IR3(:,2) = imag(SHF1_L);
 
-DXH = DVH';
-for k1 = 1:N1
-    for k2 = 1:N2
-        DSH_L(1, (k2-1)*N1+k1) = DXH(k1, k2);
-    end 
+% SHF1 = zeros(N1,N2);
+% for n1 = 1:N1
+%   for n2 = 1:N2
+%     SHF1(n1, n2) = SHF1_L((n1-1)*N2+n2,1);
+%   end 
+% end
+
+% ---- STAGE 3: ROTATE AFTER SHUFFLER ----
+SHW = zeros(N1,N2);
+for n1 = 1:N1
+  for n2 = 1:N2
+    SHW(n1, n2) = exp(-1j*2*pi*(n1-1)*(n2-1)/(N1*N2)); 
+  end
 end
 
-IR3(:,1) = real(DSH_L);
-IR3(:,2) = imag(DSH_L);
-
-DXH = DSH';
-for k1 = 1:N1
-  for k2 = 1:N2
-    DSH_L(1, (k2-1)*N1+k1) = DXH(k1, k2);
+TWD_L = zeros(NFFT,1);
+for n1 = 1:N1
+  for n2 = 1:N2
+    TWD_L((n2-1)*N1+n1, 1) = SHW(n1, n2);
   end 
 end
 
-IR5(:,1) = real(DSH_L);
-IR5(:,2) = imag(DSH_L);
+IR4(:,1) = real(TWD_L);
+IR4(:,2) = imag(TWD_L);
 
-% ---- STAGE 3: CALCULATE SECOND FFT (B) ----
+% ---- STAGE 4: MULTIPLY DATA ----
+MULT = zeros(N1,N2);
+for n1 = 1:N1
+  for n2 = 1:N2
+    MULT(n1, n2) = DFFT1(n1, n2) * SHW(n1, n2);
+  end
+end
+
+MLT_L = zeros(NFFT,1);
+for n1 = 1:N1
+  for n2 = 1:N2
+    MLT_L((n2-1)*N1+n1, 1) = MULT(n1, n2);
+  end 
+end
+
+IR5(:,1) = real(MLT_L);
+IR5(:,2) = imag(MLT_L);
+
+% ---- STAGE 5: CALCULATE SECOND FFT (B) ----
+DFFT2 = zeros(N1,N2);
 for n2 = 1:N2
-    DFFT2(:,n2) = fft(DSH(n2,:));
+    DFFT2(:,n2) = fft(MULT(:,n2));
 end
 
-for k1 = 1:N1
-  for k2 = 1:N2
-    DFFT2_L(1, (k2-1)*N1+k1) = DFFT2(k1, k2);
+DFFT2_L = zeros(NFFT,1);
+for n1 = 1:N1
+  for n2 = 1:N2
+    DFFT2_L((n2-1)*N1+n1, 1) = DFFT2(n1, n2);
   end 
 end
 
@@ -199,9 +207,10 @@ IR6(:,1) = real(DFFT2_L);
 IR6(:,2) = imag(DFFT2_L);
 
 % ---- STAGE 4: CREATE MATRIX FOR OUTPUT DATA ----
-for k1 = 1:N1
-  for k2 = 1:N2
-    DOUT((k1-1)*N2+k2, 1) = DFFT2(k1, k2);
+DOUT = zeros(NFFT,1);
+for n1 = 1:N1
+  for n2 = 1:N2
+    DOUT((n1-1)*N2+n2, 1) = DFFT2(n1, n2);
   end 
 end
 
