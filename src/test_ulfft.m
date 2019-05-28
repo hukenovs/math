@@ -123,7 +123,7 @@ IR1(:,2) = imag(DIN_L);
 % ---- STAGE 1: CALCULATE FIRST FFT (A) ----
 DFFT1 = zeros(N1,N2);
 for n1 = 1:N1
-  DFFT1(n1,:) = fft(DIN(n1,:));
+  DFFT1(n1, :) = fft(DIN(n1,:));
 end
 
 DFFT1_L = zeros(NFFT,1);
@@ -140,7 +140,7 @@ IR2(:,2) = imag(DFFT1_L);
 SHF1_L = zeros(NFFT,1);
 for n1 = 1:N1
   for n2 = 1:N2
-    SHF1_L((n2-1)*N1+n1,1) = DFFT1(n1, n2);
+    SHF1_L((n2-1)*N1+n1, 1) = DFFT1(n1, n2);
   end 
 end
 
@@ -193,7 +193,7 @@ IR5(:,2) = imag(MLT_L);
 % ---- STAGE 5: CALCULATE SECOND FFT (B) ----
 DFFT2 = zeros(N1,N2);
 for n2 = 1:N2
-    DFFT2(:,n2) = fft(MULT(:,n2));
+    DFFT2(:, n2) = fft(MULT(:,n2));
 end
 
 DFFT2_L = zeros(NFFT,1);
@@ -206,7 +206,7 @@ end
 IR6(:,1) = real(DFFT2_L);
 IR6(:,2) = imag(DFFT2_L);
 
-% ---- STAGE 4: CREATE MATRIX FOR OUTPUT DATA ----
+% ---- STAGE 6: CREATE MATRIX FOR OUTPUT DATA ----
 DOUT = zeros(NFFT,1);
 for n1 = 1:N1
   for n2 = 1:N2
