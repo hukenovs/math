@@ -20,7 +20,7 @@ License: GNU GPL 3.0.
 | **Title**         | Universal m-scripts for DSP based on FGPA |
 | -- | -- |
 | **Author**        | Alexander Kapitanov                       |
-| **Contact**       | sallador@bk.ru                            |
+| **Contact**       | <hidden>                                  |
 | **Project lang**  | m-scripts                                 |
 | **Compiler**      | Matlab or GNU Octave                      |
 | **Release Date**  | 20 Sep 2018                               |
